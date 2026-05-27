@@ -39,15 +39,42 @@ interface FormErrors {
   image?: string;
 }
 
-function fileToBase64(file: File): Promise<string> {
+function compressImageToBase64(file: File, maxDim = 1200, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Failed to read file as string'));
+    const img = typeof window !== 'undefined' ? new Image() : null;
+    if (!img) {
+      reject(new Error('Canvas/Image not supported on server-side'));
+      return;
+    }
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Failed to get 2D context'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      const base64 = canvas.toDataURL('image/jpeg', quality);
+      resolve(base64);
     };
-    reader.onerror = () => reject(reader.error ?? new Error('FileReader error'));
-    reader.readAsDataURL(file);
+    img.onerror = () => reject(new Error('Failed to load image for compression'));
   });
 }
 
@@ -92,7 +119,7 @@ export default function NewProjectPage() {
 
     setIsProcessingImage(true);
     try {
-      const base64 = await fileToBase64(file);
+      const base64 = await compressImageToBase64(file);
       setImageBase64(base64);
       setImageFileName(file.name);
     } catch (err) {
@@ -185,7 +212,7 @@ export default function NewProjectPage() {
 
     setIsSubmitting(true);
     try {
-      await createProject({
+      const res = await createProject({
         title: title.trim(),
         description: description.trim(),
         dimensions: dimensions.trim(),
@@ -195,15 +222,16 @@ export default function NewProjectPage() {
         image: imageBase64!,
       });
 
-      router.push('/');
-      router.refresh();
+      if (!res.success) {
+        setGlobalError(res.error ?? 'Something went wrong. Please try again.');
+        setIsSubmitting(false);
+      } else {
+        router.push('/');
+        router.refresh();
+      }
     } catch (err) {
       console.error(err);
-      setGlobalError(
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong. Please try again.'
-      );
+      setGlobalError('Something went wrong. Please try again.');
       setIsSubmitting(false);
     }
   };

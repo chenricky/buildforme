@@ -102,7 +102,7 @@ function BidForm({ projectId, priceMin, priceMax, onBidAdded }: BidFormProps) {
 
     startTransition(async () => {
       try {
-        const newBid = await createBid({
+        const res = await createBid({
           projectId,
           artisanId: 'artisan_self',
           artisanName: artisanName.trim(),
@@ -110,10 +110,14 @@ function BidForm({ projectId, priceMin, priceMax, onBidAdded }: BidFormProps) {
           days: parseInt(days, 10),
           proposal: proposal.trim(),
         });
-        onBidAdded(newBid);
+        if (!res.success || !res.data) {
+          setErrors({ global: res.error ?? 'Failed to submit bid.' });
+        } else {
+          onBidAdded(res.data);
+        }
       } catch (err) {
         console.error(err);
-        setErrors({ global: err instanceof Error ? err.message : 'Failed to submit bid' });
+        setErrors({ global: 'Something went wrong. Please try again.' });
       }
     });
   };
@@ -401,10 +405,17 @@ export default function ProjectDetailClient({
     router.refresh();
   };
 
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
   const handleAcceptBid = (bidId: string) => {
+    setGlobalError(null);
     startAcceptTransition(async () => {
       try {
-        await acceptBid(bidId);
+        const res = await acceptBid(bidId);
+        if (!res.success) {
+          setGlobalError(res.error ?? 'Failed to accept bid.');
+          return;
+        }
         // Snappy local state updates
         setBids(prev =>
           prev.map(b => {
@@ -417,6 +428,7 @@ export default function ProjectDetailClient({
         router.refresh();
       } catch (err) {
         console.error(err);
+        setGlobalError('Something went wrong. Please try again.');
       }
     });
   };
@@ -446,6 +458,14 @@ export default function ProjectDetailClient({
         <ArrowLeft className="h-4 w-4" />
         <span>Back to Marketplace</span>
       </Link>
+
+      {/* Global Error */}
+      {globalError && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-800 rounded-xl p-4 flex items-start space-x-3">
+          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <p className="text-sm">{globalError}</p>
+        </div>
+      )}
 
       {/* Status Banner */}
       {project.status !== 'open' && (
