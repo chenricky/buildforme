@@ -161,23 +161,29 @@ export default function NewProjectPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const validate = (): boolean => {
+  const validate = (): { isValid: boolean; errorsList: string[] } => {
     const newErrors: FormErrors = {};
+    const errorsList: string[] = [];
 
     if (!title.trim()) {
       newErrors.title = 'Please give your project a title.';
+      errorsList.push('Title is required');
     } else if (title.trim().length < 5) {
       newErrors.title = 'Title should be at least 5 characters.';
+      errorsList.push('Title must be at least 5 characters');
     }
 
     if (!description.trim()) {
       newErrors.description = 'Please describe what you want built.';
+      errorsList.push('Description is required');
     } else if (description.trim().length < 20) {
       newErrors.description = 'Description should be at least 20 characters.';
+      errorsList.push('Description must be at least 20 characters');
     }
 
     if (!dimensions.trim()) {
       newErrors.dimensions = 'Please specify the dimensions.';
+      errorsList.push('Dimensions are required');
     }
 
     const minNum = parseFloat(priceMin);
@@ -185,28 +191,34 @@ export default function NewProjectPage() {
 
     if (!priceMin.trim() || isNaN(minNum) || minNum < 0) {
       newErrors.priceMin = 'Enter a valid minimum price.';
+      errorsList.push('Minimum price is invalid');
     }
     if (!priceMax.trim() || isNaN(maxNum) || maxNum < 0) {
       newErrors.priceMax = 'Enter a valid maximum price.';
+      errorsList.push('Maximum price is invalid');
     }
     if (!newErrors.priceMin && !newErrors.priceMax && minNum > maxNum) {
       newErrors.priceMax = 'Maximum must be greater than or equal to minimum.';
+      errorsList.push('Maximum budget must be greater than or equal to minimum');
     }
 
     if (!imageBase64) {
       newErrors.image = 'Please upload a reference image.';
+      errorsList.push('Reference image is required');
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    console.log('Validation checked. Errors found:', errorsList);
+    return { isValid: errorsList.length === 0, errorsList };
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setGlobalError(null);
 
-    if (!validate()) {
-      setGlobalError('Please fix the errors below before submitting.');
+    const { isValid, errorsList } = validate();
+    if (!isValid) {
+      setGlobalError(`Please fix the errors below before submitting: ${errorsList.join(', ')}.`);
       return;
     }
 
