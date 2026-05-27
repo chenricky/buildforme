@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BuildForMe — Custom Furniture Marketplace 🚀
 
-## Getting Started
+Welcome to **BuildForMe**, a highly responsive, modern full-stack freelancing marketplace where **customers** can post custom furniture requests and **artisans** can submit bids to make them.
 
-First, run the development server:
+This application is fully migrated from a browser-only `localStorage` prototype into a globally active production site connected to a **Neon Postgres database** and running live on **Vercel**!
 
+## 🔗 Live Application Links
+- **Production Domain:** [https://buildforme.vercel.app](https://buildforme.vercel.app)
+- **Database Engine:** Neon Postgres Serverless
+- **Host Infrastructure:** Vercel Cloud Serverless Functions
+
+---
+
+## 🛠️ Tech Stack & Key Upgrades
+
+- **Framework:** Next.js 16 (App Router) + TypeScript
+- **Styling:** Tailwind CSS + Lucide Icons
+- **Data Layer:** Neon Serverless PostgreSQL (`@neondatabase/serverless`)
+- **Fault-Insulated Server Actions:** Mutations (`createProject`, `createBid`, `acceptBid`) are fully isolated. Database timeouts, network errors, or validation blocks are caught gracefully on the server and returned as structured payloads rather than triggering blank 500 render crashes.
+- **Client-Side Image Compression:** Added a high-performance HTML5 Canvas compression routine. Resizes images to a maximum bounding box of 1200px and encodes them to a JPEG quality of 0.7. This shrinks photo payloads from multi-megabytes to under ~150KB, ensuring smooth transfers well below Vercel's **4.5MB serverless payload execution limit**.
+
+---
+
+## 🚀 Deployment Workflow (Vercel CLI)
+
+This project is configured to deploy **directly from this local folder** using the **Vercel CLI**. Changes do not require pushing to a Git provider (like GitHub) to trigger a build—the Vercel CLI packages, compiles, and deploys local changes directly.
+
+### 1. Local Development
+Start your local sandbox connected to the production database:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment Variables Integration
+All sensitive database credentials in `.env.local` are explicitly ignored in `.gitignore` to prevent leaks. To synchronize your local keys with the Vercel project space, use the CLI:
+```bash
+# Add main connection parameters
+npx vercel env add DATABASE_URL production
+npx vercel env add PGHOST production
+npx vercel env add PGUSER production
+npx vercel env add PGPASSWORD production
+npx vercel env add PGDATABASE production
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Deploying to Production
+To compile, bundle, tree-shake, and deploy your latest committed local code straight to the live production server, execute:
+```bash
+npx vercel --prod --yes
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*Note: The `--yes` flag bypasses Vercel's default CLI configuration prompts, triggering an instant 20-30 second compiled build aliased automatically to your primary domain.*
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📁 Repository Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+BuildForMe/
+├── README.md                            ← (This file: Local CLI deployment guide)
+├── .vercel/                             ← Hidden project links for Vercel CLI
+├── .env.local                           ← Database secrets (excluded from Git)
+├── package.json                         ← Core serverless configurations
+├── src/
+│   ├── app/
+│   │   ├── page.tsx                     ← Marketplace Server Entry point
+│   │   ├── layout.tsx                   ← Nav layout + active role shell
+│   │   ├── projects/
+│   │   │   ├── new/page.tsx             ← New project form + HTML5 canvas downscaler
+│   │   │   └── [id]/page.tsx            ← Dynamic project detail Server Component
+│   ├── components/
+│   │   ├── MarketplaceFeed.tsx          ← UI Marketplace scroll feed
+│   │   ├── Navigation.tsx               ← Header brand & instant role switcher
+│   │   └── ProjectDetailClient.tsx      ← Dynamic Artisan bidding & Customer accept panel
+│   ├── context/
+│   │   └── AppContext.tsx               ← Lightweight client active-role states
+│   └── lib/
+│       ├── actions.ts                   ← Database Server Actions (Fault-insulated)
+│       ├── db.ts                        ← Neon Postgres client (build-time resilient)
+│       └── types.ts                     ← Strict TypeScript structures
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🧪 Testing Verification Rules
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To confirm the database and serverless functions are communicating flawlessly in production:
+1. Open [https://buildforme.vercel.app](https://buildforme.vercel.app) (you will see the starter seed tables initialized on Neon immediately).
+2. Click **Artisan** in the navbar → click **View details** on a project.
+3. Submit a bid. Verify the state changes to show your submitted bid (confirming a write to the `bids` table).
+4. Toggle back to **Customer** in the header → re-open the project.
+5. Click **Accept this Bid**. Verify that:
+   - The project status changes to `in_progress`.
+   - Your accepted bid displays a green checkmark, while sibling bids are automatically rejected.
