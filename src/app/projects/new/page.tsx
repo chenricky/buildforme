@@ -401,6 +401,7 @@ export default function NewProjectPage() {
                 errors.title ? 'border-red-300' : 'border-stone-200'
               }`}
             />
+            <p className="text-xs text-stone-400 mt-1">Title must be at least 5 characters.</p>
             {errors.title && (
               <p className="mt-1.5 text-sm text-red-700">{errors.title}</p>
             )}
@@ -425,6 +426,7 @@ export default function NewProjectPage() {
                 errors.description ? 'border-red-300' : 'border-stone-200'
               }`}
             />
+            <p className="text-xs text-stone-400 mt-1">Description must be at least 20 characters.</p>
             <div className="mt-1 flex justify-between items-center">
               {errors.description ? (
                 <p className="text-sm text-red-700">{errors.description}</p>
