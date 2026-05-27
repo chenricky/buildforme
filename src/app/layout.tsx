@@ -37,7 +37,7 @@ export default function RootLayout({
           <footer className="border-t border-stone-200 bg-white py-6 mt-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-stone-500">
               © {new Date().getFullYear()} BuildForMe — Crafted with care for
-              makers and dreamers.
+              makers and dreamers. System is designed in Seattle
             </div>
           </footer>
         </AppProvider>
