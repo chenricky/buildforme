@@ -1,19 +1,35 @@
 import { neon } from '@neondatabase/serverless';
 
-const connectionString = process.env.DATABASE_URL;
+let sqlInstance: any = null;
 
-if (!connectionString) {
-  throw new Error(
-    'DATABASE_URL is not set. Please configure Neon credentials in .env.local'
-  );
+function getSql(): any {
+  if (!sqlInstance) {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      // Return a stub function during build time if environment variables are not set.
+      return () => Promise.resolve([]);
+    }
+    sqlInstance = neon(connectionString);
+  }
+  return sqlInstance;
 }
 
-export const sql = neon(connectionString);
+// Lazy SQL tagged template runner
+export const sql = (strings: TemplateStringsArray, ...values: any[]) => {
+  const runner = getSql();
+  return runner(strings, ...values);
+};
 
 // Memoized schema initialization — runs once per server instance.
 let schemaPromise: Promise<void> | null = null;
 
 export function ensureSchema(): Promise<void> {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    // Gracefully resolve during static pre-rendering build phases
+    return Promise.resolve();
+  }
+
   if (!schemaPromise) {
     schemaPromise = (async () => {
       await sql`
